@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Combinador de resistencias serie-paralelo</title>
+<style>
+:root{--bg:#e8eff3;--grid:#d3dfe6;--surface:#fff;--ink:#10303b;--muted:#5a7480;--line:#c3d3db;--accent:#1d4ed8;--accent-ink:#fff;--soft:#e3ebff;--good:#0f7b4a;--bad:#b4331f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a26;--grid:#162636;--surface:#152433;--ink:#e4eef5;--muted:#8fa7b6;--line:#2a4256;--accent:#7cc4ff;--accent-ink:#06223a;--soft:#1b3550;--good:#5fdb9f;--bad:#ff8f7a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1a26;--grid:#162636;--surface:#152433;--ink:#e4eef5;--muted:#8fa7b6;--line:#2a4256;--accent:#7cc4ff;--accent-ink:#06223a;--soft:#1b3550;--good:#5fdb9f;--bad:#ff8f7a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;color:var(--ink);font:16px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+main{max-width:980px;margin:0 auto;padding:28px 16px 48px}
+h1{font:700 clamp(1.6rem,4vw,2.4rem)/1.15 Georgia,"Times New Roman",serif;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 22px;max-width:60ch}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:18px}
+form{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+label,.lbl{display:block;font-size:.85rem;color:var(--muted);margin-bottom:5px}
+.row{display:flex;gap:8px}
+input[type=text],select{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+input[type=text]{width:170px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.1rem}
+select{width:90px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{margin:0;padding:10px 16px;min-height:44px;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:6px;font-size:.95rem}
+.seg input:checked+label{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.seg input:focus-visible+label{outline:3px solid var(--accent);outline-offset:-3px}
+button{font:inherit;font-weight:700;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:10px 22px;min-height:44px;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+.err{color:var(--bad);margin:12px 0 0;min-height:1.4em}
+#out{margin-top:22px;display:none}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;text-align:left;font-weight:400;color:var(--ink);min-height:0;display:block;width:100%}
+.card:hover{filter:none;border-color:var(--accent)}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+.card .k{color:var(--muted);font-size:.85rem}
+.card .big{font-size:1.7rem;font-weight:700;margin:2px 0}
+.card .d{font-size:.9rem;color:var(--muted);word-break:break-word}
+.tag{display:inline-block;font-size:.8rem;padding:2px 9px;border-radius:99px;border:1.5px solid currentColor}
+.ok{color:var(--good)}.no{color:var(--bad)}
+.split{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+@media(min-width:820px){.split{grid-template-columns:1.1fr 1fr}}
+.diag{display:flex;align-items:center;justify-content:center;overflow-x:auto;min-height:150px}
+.diag svg{max-width:100%;height:auto;color:var(--ink)}
+.meta{margin:10px 0 0;font-size:.92rem;color:var(--muted)}
+.meta b{color:var(--ink)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1.5px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--soft)}tbody tr.sel{background:var(--soft);font-weight:700}
+td.c{white-space:normal;word-break:break-word;min-width:150px}
+h2{font-size:1.05rem;margin:0 0 10px}
+.tbtn{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;min-height:44px;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);padding:6px 12px;font-weight:400}
+</style>
+</head>
+<body>
+<button class="tbtn" id="theme" type="button" aria-label="Cambiar tema">Tema</button>
+<main>
+<h1>Combinador de resistencias</h1>
+<p class="sub">Escribe el valor que necesitas y la tolerancia. El programa prueba todas las conexiones serie y paralelo con 1, 2 o 3 resistencias comerciales y muestra las que más se acercan.</p>
+
+<section class="panel">
+<div id="f" class="form" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+<div><label for="val">Valor deseado</label>
+<div class="row"><input id="val" type="text" inputmode="decimal" value="3.3" autocomplete="off">
+<select id="unit" aria-label="Unidad"><option value="1">Ω</option><option value="1e3" selected>kΩ</option><option value="1e6">MΩ</option></select></div></div>
+<div><span class="lbl">Tolerancia</span>
+<div class="seg" role="radiogroup" aria-label="Tolerancia">
+<input type="radio" name="tol" id="t10" value="10"><label for="t10">10 % (E12)</label>
+<input type="radio" name="tol" id="t1" value="1" checked><label for="t1">1 % (E96)</label></div></div>
+<button id="go" type="button">Calcular</button>
+</div>
+<p class="err" id="err" role="alert"></p>
+</section>
+
+<section id="out" aria-live="polite">
+<div class="cards" id="cards"></div>
+<div class="split">
+<div class="panel"><h2>Circuito seleccionado</h2><div class="diag" id="diag"></div><p class="meta" id="meta"></p></div>
+<div class="panel"><h2>Mejores combinaciones</h2><div class="tw"><table><thead><tr><th>Combinación</th><th>Total</th><th>Error</th><th>N.º R</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+</div>
+</section>
+</main>
+
+<script>
+const E12=[1.0,1.2,1.5,1.8,2.2,2.7,3.3,3.9,4.7,5.6,6.8,8.2];
+const E96=[100,102,105,107,110,113,115,118,121,124,127,130,133,137,140,143,147,150,154,158,162,165,169,174,178,182,187,191,196,200,205,210,215,221,226,232,237,243,249,255,261,267,274,280,287,294,301,309,316,324,332,340,348,357,365,374,383,392,402,412,422,432,442,453,464,475,487,499,511,523,536,549,562,576,590,604,619,634,649,665,681,698,715,732,750,768,787,806,825,845,866,887,909,931,953,976].map(x=>x/100);
+const cache={};
+const $=id=>document.getElementById(id);
+
+function fmt(v){let u='Ω',x=v;if(v>=1e6){x=v/1e6;u='MΩ'}else if(v>=1e3){x=v/1e3;u='kΩ'}return (+x.toPrecision(4))+u}
+const R=v=>({t:'R',v});
+function mk(t,ch){const c=[];for(const x of ch){if(x.t===t)c.push(...x.c);else c.push(x)}return{t,c}}
+function val(n){if(n.t==='R')return n.v;const a=n.c.map(val);return n.t==='S'?a.reduce((p,q)=>p+q,0):1/a.reduce((p,q)=>p+1/q,0)}
+function cnt(n){return n.t==='R'?1:n.c.reduce((s,x)=>s+cnt(x),0)}
+function str(n,top){if(n.t==='R')return fmt(n.v);const s=n.c.map(x=>str(x)).join(n.t==='S'?' + ':' ∥ ');return top?s:'('+s+')'}
+function key(n){return n.t==='R'?fmt(n.v):n.t+'['+n.c.map(key).sort().join(',')+']'}
+
+function prep(tol){
+  if(cache[tol])return cache[tol];
+  const base=tol==10?E12:E96,vals=[];
+  for(let d=0;d<=6;d++)for(const m of base)vals.push(Math.round(m*10**d*100)/100);
+  const n=vals.length,tot=n*(n+1);
+  const pv=new Float64Array(tot),pa=new Uint16Array(tot),pb=new Uint16Array(tot),pt=new Uint8Array(tot);
+  let k=0;
+  for(let i=0;i<n;i++)for(let j=i;j<n;j++){
+    const a=vals[i],b=vals[j];
+    pv[k]=a+b;pa[k]=i;pb[k]=j;pt[k]=0;k++;
+    pv[k]=a*b/(a+b);pa[k]=i;pb[k]=j;pt[k]=1;k++;
+  }
+  const ord=Uint32Array.from({length:k},(_,i)=>i).sort((x,y)=>pv[x]-pv[y]);
+  const sv=new Float64Array(k);for(let i=0;i<k;i++)sv[i]=pv[ord[i]];
+  return cache[tol]={vals,sv,ord,pa,pb,pt,k};
+}
+function lb(arr,x){let lo=0,hi=arr.length;while(lo<hi){const m=(lo+hi)>>1;if(arr[m]<x)lo=m+1;else hi=m}return lo}
+
+function solve(T,tol){
+  const D=prep(tol),{vals,sv,ord,pa,pb,pt,k}=D,M=new Map();
+  const add=n=>{const key_=key(n);if(M.has(key_))return;const v=val(n);M.set(key_,{n,v,e:(v-T)/T*100,c:cnt(n)})};
+  const pair=i=>mk(pt[i]?'P':'S',[R(vals[pa[i]]),R(vals[pb[i]])]);
+  const near=(x,w,f)=>{const lo=lb(sv,x);for(let i=lo-w;i<lo+w;i++)if(i>=0&&i<k)f(ord[i])};
+  // 1 resistencia
+  const l1=lb(vals,T);for(let i=l1-2;i<l1+2;i++)if(i>=0&&i<vals.length)add(R(vals[i]));
+  // 2 resistencias
+  near(T,5,i=>add(pair(i)));
+  // 3 resistencias: (par) + C  o  (par) ∥ C  — cubre las 4 topologías
+  for(const C of vals){
+    if(C<T)near(T-C,2,i=>add(mk('S',[pair(i),R(C)])));
+    else if(C>T)near(T*C/(C-T),2,i=>add(mk('P',[pair(i),R(C)])));
+  }
+  return [...M.values()].sort((a,b)=>Math.abs(a.e)-Math.abs(b.e)||a.c-b.c);
+}
+
+/* ---------- dibujo ---------- */
+function size(n){
+  if(n.t==='R')return n.w=64,n.h=26,n;
+  n.c.forEach(size);
+  if(n.t==='S'){n.w=n.c.reduce((s,x)=>s+x.w,0)+14*(n.c.length-1);n.h=Math.max(...n.c.map(x=>x.h))}
+  else{n.w=Math.max(...n.c.map(x=>x.w))+36;n.h=n.c.reduce((s,x)=>s+x.h,0)+12*(n.c.length-1)}
+  return n;
+}
+function draw(n,x,y){
+  const my=y+n.h/2;
+  if(n.t==='R')return `<line x1="${x}" y1="${my}" x2="${x+64}" y2="${my}"/><rect x="${x+10}" y="${my-10}" width="44" height="20" rx="3" fill="var(--soft)"/><text x="${x+32}" y="${my+3.5}" text-anchor="middle" font-size="10" fill="currentColor" stroke="none" font-family="ui-monospace,Menlo,Consolas,monospace">${fmt(n.v)}</text>`;
+  let s='';
+  if(n.t==='S'){let cx=x;n.c.forEach((c,i)=>{s+=draw(c,cx,y+(n.h-c.h)/2);cx+=c.w;if(i<n.c.length-1){s+=`<line x1="${cx}" y1="${my}" x2="${cx+14}" y2="${my}"/>`;cx+=14}});return s}
+  const mw=n.w-36,lx=x+18,rx=x+n.w-18;let cy=y,first,last;
+  n.c.forEach(c=>{const m=cy+c.h/2,ox=lx+(mw-c.w)/2;s+=draw(c,ox,cy)+`<line x1="${lx}" y1="${m}" x2="${ox}" y2="${m}"/><line x1="${ox+c.w}" y1="${m}" x2="${rx}" y2="${m}"/>`;if(first===undefined)first=m;last=m;cy+=c.h+12});
+  return s+`<line x1="${lx}" y1="${first}" x2="${lx}" y2="${last}"/><line x1="${rx}" y1="${first}" x2="${rx}" y2="${last}"/><line x1="${x}" y1="${my}" x2="${lx}" y2="${my}"/><line x1="${rx}" y1="${my}" x2="${x+n.w}" y2="${my}"/>`;
+}
+function svg(n){
+  size(n);const w=n.w+40,h=n.h+20;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Esquema ${str(n,1)}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="${h/2}" x2="20" y2="${h/2}"/>${draw(n,20,10)}<line x1="${w-20}" y1="${h/2}" x2="${w-4}" y2="${h/2}"/><circle cx="4" cy="${h/2}" r="3" fill="currentColor"/><circle cx="${w-4}" cy="${h/2}" r="3" fill="currentColor"/></svg>`;
+}
+
+/* ---------- interfaz ---------- */
+let state={};
+const sgn=e=>(e>0?'+':'')+e.toFixed(Math.abs(e)<0.1?3:2)+' %';
+function show(r){
+  state.sel=r;
+  const {tol,T}=state,lo=r.v*(1-tol/100),hi=r.v*(1+tol/100),inside=T>=lo&&T<=hi;
+  $('diag').innerHTML=svg(r.n);
+  $('meta').innerHTML=`<b class="mono">${str(r.n,1)}</b> = <b class="mono">${fmt(r.v)}</b><br>Con tolerancia de ${tol} % cada resistencia, el conjunto queda entre <span class="mono">${fmt(lo)}</span> y <span class="mono">${fmt(hi)}</span>. El valor pedido <b class="${inside?'ok':'no'}">${inside?'cae dentro de ese rango':'queda fuera de ese rango'}</b>.`;
+  document.querySelectorAll('[data-i]').forEach(e=>e.classList.toggle('sel',state.list[+e.dataset.i]===r));
+  document.querySelectorAll('[data-best]').forEach(e=>e.classList.toggle('sel',state.best[+e.dataset.best]===r));
+}
+function run(){
+  const raw=$('val').value.trim().replace(',','.');
+  let x=parseFloat(raw);
+  const tol=+document.querySelector('input[name=tol]:checked').value;
+  const T=x*parseFloat($('unit').value);
+  $('err').textContent='';
+  if(!/^\d*\.?\d+(e[+-]?\d+)?$/i.test(raw)||!(T>0)){$('err').textContent='Escribe un número mayor que cero, por ejemplo 4.7';return}
+  if(T<1||T>1e7){$('err').textContent='El valor debe estar entre 1 Ω y 10 MΩ.';return}
+  const list=solve(T,tol),top=list.slice(0,12);
+  const best=[1,2,3].map(c=>list.find(r=>r.c===c));
+  state={T,tol,list:top,best};
+  $('cards').innerHTML=best.map((r,i)=>`<button class="card" type="button" data-best="${i}"><span class="k">Mejor con ${i+1} resistencia${i?'s':''}</span><div class="big mono">${fmt(r.v)}</div><div class="d mono">${str(r.n,1)}</div><div style="margin-top:6px"><span class="tag ${Math.abs(r.e)<=tol?'ok':'no'}">error ${sgn(r.e)}</span></div></button>`).join('');
+  $('rows').innerHTML=top.map((r,i)=>`<tr data-i="${i}" tabindex="0"><td class="c mono">${str(r.n,1)}</td><td class="mono">${fmt(r.v)}</td><td class="mono">${sgn(r.e)}</td><td>${r.c}</td></tr>`).join('');
+  $('out').style.display='block';
+  document.querySelectorAll('[data-best]').forEach(e=>e.onclick=()=>show(best[+e.dataset.best]));
+  document.querySelectorAll('[data-i]').forEach(e=>{e.onclick=()=>show(top[+e.dataset.i]);e.onkeydown=ev=>{if(ev.key==='Enter')e.click()}});
+  show(best.reduce((a,b)=>Math.abs(b.e)<Math.abs(a.e)?b:a));
+}
+$('go').onclick=run;
+$('val').onkeydown=e=>{if(e.key==='Enter')run()};
+document.querySelectorAll('input[name=tol],#unit').forEach(e=>e.onchange=run);
+$('theme').onclick=()=>{const r=document.documentElement,d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'};
+run();
+</script>
+</body>
+</html>
